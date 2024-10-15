@@ -1,0 +1,8 @@
+{
+  "name": "myapp",
+  "integrations": {
+    "capacitor": {}
+  },
+  "type": "vue-vite",
+  "id": "359c864a"
+}
