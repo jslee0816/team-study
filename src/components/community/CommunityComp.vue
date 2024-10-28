@@ -2,14 +2,9 @@
   <div id="container">
     <h2>게시글 목록</h2>
     <div id="post-list">
-      <div 
-        v-for="(post, index) in posts" 
-        :key="post.idx" 
-        class="post-item" 
-        @click="goToPostDetail(post.idx)"
-      >
+      <div v-for="(post, index) in posts" :key="post.postidx" class="post-item" @click="goToPostDetail(post.postidx)">
         <strong>{{ post.title }}</strong>
-        <span class="nickname">닉네임: {{ post.nickname }}</span> 
+        <span class="nickname">닉네임: {{ post.nickname }}</span>
       </div>
     </div>
     <div id="post-input">
@@ -19,85 +14,51 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, reactive, onMounted, nextTick } from 'vue';
 import { IonButton } from '@ionic/vue';
-import { database } from '@/firebase';
-import { ref as dbRef, onValue } from "firebase/database";
 import router from '@/router';
 
-// Post 타입 정의
+// 타입 정의
 interface Post {
-  idx: number;
+  postidx: number;
   content: string;
-  title: string; 
-  userId: string; 
-  nickname: string; 
+  title: string;
+  userid: number;
+  nickname: string;
 }
 
-const posts = ref<Post[]>([]);
+let posts = ref<Post[]>([]);
+// const posts = ref([]);
 
-onMounted(() => {
-  fetchPosts();
-});
 
+// 전체 post 가져오기
+const fetchPosts = async () => {
+  const API_BASE_URL = 'http://localhost:8080';
+  try {
+    const response = await fetch(`${API_BASE_URL}/posts`
+    );
+    if (!response.ok) {
+      throw new Error(`Error status: ${response.status}`);
+    }
+    const data = await response.json();
+    posts.value = data;
+    console.log(posts);
+  } catch (error: any) {
+    console.error('데이터 패치 실패: ', error.message);
+    alert("데이터를 가져오지 못했습니다: " + error.message);
+  }
+  await nextTick();
+}
+// 게시물 생성 페이지로 이동
 const addPost = () => {
   router.push('/createContent');
 }
-
 // 게시물 상세 페이지로 이동
-const goToPostDetail = (postId: number) => {
-  router.push(`/postDetail/${postId}`); // 상세 페이지로 이동
+const goToPostDetail = (postidx: number) => {
+  router.push(`/postDetail/${postidx}`); // 상세 페이지로 이동
 }
 
-const fetchPosts = () => {
-  const postsRef = dbRef(database, 'posts');
-
-  onValue(postsRef, (snapshot) => {
-    const data = snapshot.val();
-    if (data) {
-      const postArray = Object.values(data).map((post: any) => ({
-        idx: post.idx,
-        content: post.content,
-        title: post.title,
-        userId: post.userId 
-      }));
-
-      // 사용자 정보를 가져와서 닉네임 추가
-      fetchUserNicknames(postArray);
-    } else {
-      posts.value = [];
-      console.log("No posts found.");
-    }
-  }, (error) => {
-    console.error("Error fetching posts: ", error); 
-  });
-};
-
-const fetchUserNicknames = (postArray: Omit<Post, 'nickname'>[]) => {
-  const usersRef = dbRef(database, 'users');
-
-  // 사용자 데이터 가져오기
-  onValue(usersRef, (snapshot) => {
-    const userData = snapshot.val();
-    const userNicknames: { [key: string]: string } = {};
-
-    if (userData) {
-      for (const key in userData) {
-        userNicknames[key] = userData[key].nickname;
-      }
-    }
-
-    // 게시물에 닉네임 추가
-    posts.value = postArray.map(post => ({
-      ...post,
-      nickname: userNicknames[post.userId] || '익명'
-    }));
-
-    console.log("Fetched posts with nicknames: ", posts.value); 
-  }, (error) => {
-    console.error("Error fetching users: ", error); 
-  });
-};
+onMounted(fetchPosts);
 </script>
 
 <style>
@@ -118,12 +79,12 @@ const fetchUserNicknames = (postArray: Omit<Post, 'nickname'>[]) => {
   padding: 8px;
   margin: 4px 0;
   border-radius: 4px;
-  display: flex; 
-  justify-content: space-between; 
-  cursor: pointer; 
+  display: flex;
+  justify-content: space-between;
+  cursor: pointer;
 }
 
 .nickname {
-  margin-left: auto; 
+  margin-left: auto;
 }
 </style>

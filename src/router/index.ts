@@ -13,11 +13,11 @@ const routes: Array<RouteRecordRaw> = [
   },
   {
     path: '/login',
-    component: Login, 
+    component: Login,
   },
   {
     path: '/signUp',
-    component: SignUp, 
+    component: SignUp,
   },
   {
     path: '/main',
